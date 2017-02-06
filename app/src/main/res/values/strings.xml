@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Stock Market Viewer</string>
+    <string name="stock_name_symbol">Stock Name/Symbol</string>
+    <string name="get_quote">GET QUOTE</string>
+    <string name="clear">CLEAR</string>
+    <string name="favorites">Favorites</string>
+    <string name="auto_refresh">Auto Refresh</string>
+    <string name="refresh">Refresh</string>
+    <string name="facebook_app_id">257669031238281</string>
+    <string name="second">Stock Info</string>
+    <string name="stock_details">Stock Details</string>
+    <string name="today_s_stock_activity">Today\'s Stock Activity</string>
+    <string name="news_feed">News Feed</string>
+    <string name="favorites1">Favorites</string>
+</resources>

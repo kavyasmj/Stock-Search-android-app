@@ -1,0 +1,196 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+
+<!-- JQuery -->
+<script   src="https://code.jquery.com/jquery-2.2.2.min.js"   integrity="sha256-36cp2Co+/62rEAAYHLmRCPIych47CvdM+uTBJwSzWjI="   crossorigin="anonymous"></script>
+<!-- JQuery UI-->    
+<script   src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"   integrity="sha256-xNjb53/rY+WmG+4L6tTl9m6PpqknWZvRt0rO1SRnJzw="   crossorigin="anonymous"></script>
+ 
+<script src="https://code.highcharts.com/stock/highstock.js"></script>
+
+</head>
+    
+<body>  
+     <div id="chartContainer">
+     </div>
+<script>
+
+var sym;
+
+function init(val){
+     sym = val;
+     get_chart();
+}
+
+fixDate = function(dateIn) {
+    var dat = new Date(dateIn);
+    return Date.UTC(dat.getFullYear(), dat.getMonth(), dat.getDate());
+};
+    
+getInputParams = function(){
+
+    return {  
+        Normalized: false,
+        NumberOfDays: 1095,
+        
+        DataPeriod: "Day",
+        Elements: [
+            {
+                Symbol: sym, 
+                Type: "price",
+                Params: ["ohlc"] //ohlc, c = close only
+            },
+        ]
+    }
+};
+    
+getOHLC = function(json) {
+    var dates = json.Dates || [];
+    var elements = json.Elements || [];
+    var chartSeries = [];
+
+    if (elements[0]){
+
+        for (var i = 0, datLen = dates.length; i < datLen; i++) {
+            var dat = fixDate( dates[i] );
+            var pointData = [
+                dat,
+                elements[0].DataSeries['open'].values[i],
+                elements[0].DataSeries['high'].values[i],
+                elements[0].DataSeries['low'].values[i],
+                elements[0].DataSeries['close'].values[i]
+            ];
+            chartSeries.push( pointData );
+        };
+    }
+    return chartSeries;    
+};  
+    
+render = function(data) {
+    // split the data set into ohlc 
+    var ohlc = getOHLC(data);
+    
+    // set the allowed units for data grouping
+    var groupingUnits = [[
+        'week',                         // unit name
+        [1]                             // allowed multiples
+    ], [
+        'month',
+        [1, 2, 3, 4, 6]
+    ]];
+    
+    // create the chart
+    $('#chartContainer').highcharts('StockChart', {
+    
+         rangeSelector: {
+                inputEnabled: false,
+                buttons: [ {
+                    type: 'week',
+                    count: 1,
+                    text: '1w'
+                }, {
+                    type: 'month',
+                    count: 1,
+                    text: '1m'
+                },{
+                    type: 'month',
+                    count: 3,
+                    text: '3m'
+                }, {
+                    type: 'month',
+                    count: 6,
+                    text: '6m'
+                }, {
+                    type: 'year',
+                    count: 1,
+                    text: '1y'
+                }, {
+                    type: 'all',
+                    text: 'All'
+                }],
+                selected: 0
+            },
+
+        title: {
+            text: sym + ' Historical Price' 
+        },
+
+        yAxis: [{
+            title: {
+                text: 'Stock Value'
+            },
+            height: 200,
+            lineWidth: 2
+        }],
+        xAxis: [{
+            title: {
+                text: 'Date Time'
+            }
+        }],
+        series : [{
+                data : ohlc,
+                type : 'area',
+                threshold : null,
+                dataGrouping: {
+                units: groupingUnits
+            },
+                tooltip : {
+                    valueDecimals : 2,
+                    valuePrefix: '$'
+                },
+                fillColor : {
+                    linearGradient : {
+                        x1: 0,
+                        y1: 0,
+                        x2: 0,
+                        y2: 1
+                    },
+                    stops : [
+                        [0, Highcharts.getOptions().colors[0]],
+                        [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+                    ]
+                }
+            }]
+
+
+    });
+
+};     
+
+     
+function get_chart(){
+        var stock_symbol = sym; 
+        var params = {
+        parameters: JSON.stringify( getInputParams() )
+            
+    }
+        
+        //Make JSON request for timeseries data
+        $.ajax({
+        beforeSend:function(){
+            $("#chartContainer").text("Loading chart...");
+        },
+        data: params,
+        url: "http://dev.markitondemand.com/Api/v2/InteractiveChart/jsonp",
+        dataType: "jsonp",
+        context: this,  
+        success: function(json){
+            //Catch errors
+            if (!json || json.Message){
+                console.error("Error: ", json.Message);
+                return;
+            }
+            render(json);
+        },
+        error: function(response,txtStatus){
+            console.log(response,txtStatus)
+        }
+    });
+}
+
+</script> 
+</body>
